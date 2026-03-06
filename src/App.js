@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 // ── Province data: approximate SVG positions + electricity prices ──────────
 const PROVINCES = [
