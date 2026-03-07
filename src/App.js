@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════════════════
 // PROVINCE MAP DATA  (800×700 canvas coords from reference code)
@@ -323,10 +323,10 @@ function MapPage({ elecData, setElecData }) {
           ] : [
             {l:"≤0.45",c:"#4caf8f"},{l:"0.50",c:"#6bc4a0"},{l:"0.55",c:"#f0c94a"},{l:"0.65",c:"#f4913a"},{l:"≥0.75",c:"#c01c28"},
           ]}
-          .map(l=>(
-            <div key={l.l} style={{display:"flex",alignItems:"center",gap:2}}>
-              <div style={{width:9,height:9,borderRadius:2,background:l.c}}/>
-              <span style={{fontSize:8,color:"#546e7a"}}>{l.l}</span>
+          .map(item=>(
+            <div key={item.l} style={{display:"flex",alignItems:"center",gap:2}}>
+              <div style={{width:9,height:9,borderRadius:2,background:item.c}}/>
+              <span style={{fontSize:8,color:"#546e7a"}}>{item.l}</span>
             </div>
           ))}
         </div>
