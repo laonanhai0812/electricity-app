@@ -231,6 +231,37 @@ function ChinaMap({ elecData, selected, onSelect, colorMode }) {
 // ═══════════════════════════════════════════════════════════════════
 // HOME / MAP PAGE
 // ═══════════════════════════════════════════════════════════════════
+const SPOT_LEGEND = [
+  {label:"低价", color:"#c2dff5"},
+  {label:"中低", color:"#83bbdf"},
+  {label:"中高", color:"#3d86c0"},
+  {label:"高价", color:"#1558a0"},
+  {label:"最高", color:"#0a3070"},
+];
+const RES_LEGEND = [
+  {label:"≤0.45", color:"#4caf8f"},
+  {label:"0.50",  color:"#6bc4a0"},
+  {label:"0.55",  color:"#f0c94a"},
+  {label:"0.65",  color:"#f4913a"},
+  {label:"≥0.75", color:"#c01c28"},
+];
+function MapLegend({ colorMode }) {
+  var items = colorMode === "spot" ? SPOT_LEGEND : RES_LEGEND;
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:5,padding:"7px 2px 0",flexWrap:"wrap"}}>
+      <span style={{fontSize:9,color:"#90a4ae"}}>{colorMode==="spot"?"元/MWh:":"元/度:"}</span>
+      {items.map(function(entry) {
+        return (
+          <div key={entry.label} style={{display:"flex",alignItems:"center",gap:2}}>
+            <div style={{width:9,height:9,borderRadius:2,background:entry.color}}/>
+            <span style={{fontSize:8,color:"#546e7a"}}>{entry.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MapPage({ elecData, setElecData }) {
   const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState(0);
@@ -314,22 +345,7 @@ function MapPage({ elecData, setElecData }) {
         </div>
         <ChinaMap elecData={elecData} selected={selected} onSelect={setSelected} colorMode={colorMode}/>
         {/* Legend */}
-        <div style={{display:"flex",alignItems:"center",gap:5,padding:"7px 2px 0",flexWrap:"wrap"}}>
-          <span style={{fontSize:9,color:"#90a4ae"}}>
-            {colorMode==="spot"?"元/MWh:":"元/度:"}
-          </span>
-          {colorMode==="spot" ? [
-            {l:"低价",c:"#c2dff5"},{l:"中低",c:"#83bbdf"},{l:"中高",c:"#3d86c0"},{l:"高价",c:"#1558a0"},{l:"最高",c:"#0a3070"},
-          ] : [
-            {l:"≤0.45",c:"#4caf8f"},{l:"0.50",c:"#6bc4a0"},{l:"0.55",c:"#f0c94a"},{l:"0.65",c:"#f4913a"},{l:"≥0.75",c:"#c01c28"},
-          ]}
-          .map(item=>(
-            <div key={item.l} style={{display:"flex",alignItems:"center",gap:2}}>
-              <div style={{width:9,height:9,borderRadius:2,background:item.c}}/>
-              <span style={{fontSize:8,color:"#546e7a"}}>{item.l}</span>
-            </div>
-          ))}
-        </div>
+        <MapLegend colorMode={colorMode}/>
       </div>
 
       {/* Province detail card */}
