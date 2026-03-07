@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════════════
 //  ELECTRICITY DATA
@@ -226,7 +226,7 @@ function ChinaMap(props) {
           var fontSize = name.length > 2 ? 9 : 12;
 
           return (
-            <g key={name + (feat.properties&&feat.properties.adcode||"")}
+            <g key={name + ((feat.properties && feat.properties.adcode) || "")}
               onClick={function() { onSelect(isSel ? null : (data ? Object.assign({name:name}, data) : null)); }}
               onMouseEnter={function() { setHovered(name); }}
               onMouseLeave={function() { setHovered(null); }}
