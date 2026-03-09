@@ -391,7 +391,7 @@ function MapPage(props) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  DATA PAGE
+//  DATA PAGE — module grid + sub-pages
 // ═══════════════════════════════════════════════════════════════
 var PRICE_TYPES = [
   {k:"spot",l:"现货均价",unit:"元/MWh"},{k:"residential",l:"居民电价",unit:"元/度"},
@@ -399,8 +399,152 @@ var PRICE_TYPES = [
   {k:"peak",l:"峰电价",unit:"元/度"},{k:"valley",l:"谷电价",unit:"元/度"},
 ];
 
-function DataPage(props) {
-  var elecData=props.elecData, setElecData=props.setElecData;
+// 3D-style SVG icons for each module
+function ModuleIcon(props) {
+  var icons = {
+    "现货价格": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#60b3f8"/><stop offset="100%" stopColor="#1565c0"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <rect x="8" y="28" width="7" height="14" rx="2" fill="url(#g1)" opacity="0.6"/>
+        <rect x="18" y="20" width="7" height="22" rx="2" fill="url(#g1)" opacity="0.8"/>
+        <rect x="28" y="14" width="7" height="28" rx="2" fill="url(#g1)"/>
+        <rect x="38" y="22" width="7" height="20" rx="2" fill="url(#g1)" opacity="0.7"/>
+        <polyline points="11.5,28 21.5,20 31.5,14 41.5,22" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ),
+    "中长期价格": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#60b3f8"/><stop offset="100%" stopColor="#1565c0"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <rect x="10" y="12" width="32" height="28" rx="4" fill="url(#g2)" opacity="0.9"/>
+        <rect x="10" y="12" width="32" height="8" rx="4" fill="#1565c0"/>
+        <circle cx="18" cy="10" r="2.5" fill="#90caf9"/>
+        <circle cx="34" cy="10" r="2.5" fill="#90caf9"/>
+        <rect x="16" y="8" width="20" height="4" rx="2" fill="#1565c0"/>
+        <line x1="16" y1="26" x2="36" y2="26" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+        <line x1="16" y1="31" x2="30" y2="31" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+        <line x1="16" y1="36" x2="28" y2="36" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+      </svg>
+    ),
+    "省间计算器": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#80cff8"/><stop offset="100%" stopColor="#1565c0"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <rect x="10" y="8" width="32" height="36" rx="5" fill="url(#g3)"/>
+        <rect x="14" y="12" width="24" height="8" rx="3" fill="rgba(255,255,255,0.9)"/>
+        <rect x="14" y="24" width="10" height="7" rx="2" fill="rgba(255,255,255,0.7)"/>
+        <rect x="28" y="24" width="10" height="7" rx="2" fill="rgba(255,255,255,0.7)"/>
+        <rect x="14" y="34" width="10" height="7" rx="2" fill="rgba(255,255,255,0.7)"/>
+        <rect x="28" y="34" width="10" height="7" rx="2" fill="#fff"/>
+        <text x="31" y="40" fontSize="8" fill="#1565c0" fontWeight="800">=</text>
+      </svg>
+    ),
+    "增量机制电价": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#60c8f0"/><stop offset="100%" stopColor="#0d47a1"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <circle cx="26" cy="24" r="16" fill="url(#g4)"/>
+        <circle cx="26" cy="24" r="11" fill="rgba(255,255,255,0.15)"/>
+        <text x="26" y="21" textAnchor="middle" fontSize="11" fill="#fff" fontWeight="900">¥</text>
+        <text x="26" y="31" textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.85)">增量</text>
+      </svg>
+    ),
+    "储能": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4fc3f7"/><stop offset="100%" stopColor="#0d47a1"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <rect x="12" y="14" width="28" height="28" rx="5" fill="url(#g5)"/>
+        <rect x="22" y="10" width="8" height="6" rx="2" fill="#90caf9"/>
+        <rect x="16" y="20" width="20" height="14" rx="3" fill="rgba(255,255,255,0.2)"/>
+        <rect x="16" y="20" width="14" height="14" rx="3" fill="rgba(255,255,255,0.5)"/>
+        <polyline points="23,26 26,23 26,27 29,24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+    "光伏": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffe082"/><stop offset="100%" stopColor="#f57c00"/></linearGradient>
+        <linearGradient id="g6b" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#60b3f8"/><stop offset="100%" stopColor="#1565c0"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <circle cx="26" cy="16" r="8" fill="url(#g6)" opacity="0.95"/>
+        {[0,45,90,135,180,225,270,315].map(function(a,i){
+          var r=a*Math.PI/180, x1=26+10*Math.cos(r), y1=16+10*Math.sin(r), x2=26+13*Math.cos(r), y2=16+13*Math.sin(r);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#ffc107" strokeWidth="1.5" strokeLinecap="round"/>;
+        })}
+        <rect x="10" y="28" width="32" height="14" rx="3" fill="url(#g6b)"/>
+        <line x1="26" y1="28" x2="26" y2="42" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+        <line x1="18" y1="28" x2="18" y2="42" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+        <line x1="34" y1="28" x2="34" y2="42" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+        <line x1="10" y1="35" x2="42" y2="35" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+      </svg>
+    ),
+    "电源结构": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g7" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#80deea"/><stop offset="100%" stopColor="#00838f"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <circle cx="26" cy="24" r="16" fill="none" stroke="#e3f2fd" strokeWidth="2"/>
+        <path d="M26,24 L26,8 A16,16 0 0,1 40.9,32 Z" fill="#1565c0"/>
+        <path d="M26,24 L40.9,32 A16,16 0 0,1 13.5,36.5 Z" fill="#42a5f5"/>
+        <path d="M26,24 L13.5,36.5 A16,16 0 0,1 11.1,16 Z" fill="#90caf9"/>
+        <path d="M26,24 L11.1,16 A16,16 0 0,1 26,8 Z" fill="#bbdefb"/>
+        <circle cx="26" cy="24" r="6" fill="#fff"/>
+      </svg>
+    ),
+    "天气": (
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <defs><linearGradient id="g8" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#90caf9"/><stop offset="100%" stopColor="#1e88e5"/></linearGradient></defs>
+        <ellipse cx="26" cy="44" rx="18" ry="5" fill="rgba(21,101,192,0.15)"/>
+        <circle cx="30" cy="18" r="8" fill="#ffe082"/>
+        <ellipse cx="20" cy="26" rx="10" ry="7" fill="url(#g8)"/>
+        <ellipse cx="28" cy="24" rx="12" ry="8" fill="url(#g8)"/>
+        <ellipse cx="36" cy="27" rx="8" ry="6" fill="url(#g8)"/>
+        <ellipse cx="24" cy="30" rx="14" ry="7" fill="#fff" opacity="0.9"/>
+      </svg>
+    ),
+  };
+  return icons[props.name] || <div style={{fontSize:28}}>{props.fallback}</div>;
+}
+
+var DATA_MODULES = [
+  {id:"spot",    name:"现货价格",   tag:"实时",   color:"#1565c0"},
+  {id:"midlong", name:"中长期价格", tag:"合约",   color:"#1976d2"},
+  {id:"inter",   name:"省间计算器", tag:"工具",   color:"#0288d1"},
+  {id:"incr",    name:"增量机制电价",tag:"政策",  color:"#0277bd"},
+  {id:"storage", name:"储能",       tag:"NEW",    color:"#00838f"},
+  {id:"solar",   name:"光伏",       tag:"NEW",    color:"#f57c00"},
+  {id:"power",   name:"电源结构",   tag:"统计",   color:"#1565c0"},
+  {id:"weather", name:"天气",       tag:"辅助",   color:"#1976d2"},
+];
+
+// Demo data for non-spot modules
+var STORAGE_DATA = [
+  {name:"广东",cap:8200,charge:320,discharge:285,util:78,trend:"up"},
+  {name:"浙江",cap:6500,charge:295,discharge:260,util:72,trend:"up"},
+  {name:"江苏",cap:5800,charge:310,discharge:275,util:68,trend:"stable"},
+  {name:"山东",cap:4900,charge:280,discharge:248,util:65,trend:"up"},
+  {name:"湖北",cap:3200,charge:265,discharge:235,util:61,trend:"stable"},
+  {name:"四川",cap:2800,charge:240,discharge:215,util:58,trend:"down"},
+];
+var SOLAR_DATA = [
+  {name:"新疆",installed:3850,gen:7200,util:1868,curtail:5.2,trend:"up"},
+  {name:"青海",installed:3200,gen:6100,util:1906,curtail:3.8,trend:"up"},
+  {name:"甘肃",installed:2900,gen:5400,util:1862,curtail:6.1,trend:"stable"},
+  {name:"内蒙古",installed:4100,gen:7600,util:1854,curtail:4.5,trend:"up"},
+  {name:"山东",installed:3600,gen:4800,util:1333,curtail:2.1,trend:"up"},
+  {name:"河北",installed:2400,gen:3200,util:1333,curtail:1.8,trend:"stable"},
+];
+var MIDLONG_DATA = [
+  {name:"广东",y1:485,y2:502,y3:518,trend:"up"},
+  {name:"浙江",y1:468,y2:487,y3:505,trend:"up"},
+  {name:"山东",y1:452,y2:469,y3:484,trend:"up"},
+  {name:"江苏",y1:445,y2:461,y3:476,trend:"stable"},
+  {name:"湖北",y1:428,y2:441,y3:455,trend:"up"},
+  {name:"四川",y1:398,y2:408,y3:418,trend:"stable"},
+];
+
+// Sub-page: spot price list (original DataPage content)
+function SpotPricePage(props) {
+  var elecData=props.elecData, setElecData=props.setElecData, onBack=props.onBack;
   var [priceType,setPriceType]=useState("spot");
   var [search,setSearch]=useState("");
   var [sortAsc,setSortAsc]=useState(false);
@@ -442,22 +586,25 @@ function DataPage(props) {
     var rows=Object.keys(elecData).map(function(n){ var d=elecData[n]; return n+","+d.spot+","+d.spotPeak+","+d.spotValley+","+d.residential; }).join("\n");
     var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([h+rows],{type:"text/csv"})); a.download="electricity_data.csv"; a.click();
   }
-
   return (
-    <div style={{background:"#f0f6ff",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
-      <div style={{background:"#1565c0",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
-      <div style={{background:"linear-gradient(135deg,#1565c0,#1e88e5)",padding:"12px 16px 14px"}}>
-        <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:8}}>查数据</div>
-        <div style={{background:"rgba(255,255,255,0.18)",borderRadius:24,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-          <span style={{color:"rgba(255,255,255,0.7)"}}>🔍</span>
-          <input value={search} onChange={function(e){setSearch(e.target.value);}} placeholder="搜索省份..." style={{background:"none",border:"none",outline:"none",color:"#fff",fontSize:13,flex:1,fontFamily:"'PingFang SC',sans-serif"}}/>
-        </div>
+    <div>
+      {/* Back header */}
+      <div style={{background:"linear-gradient(135deg,#1565c0,#1e88e5)",padding:"10px 16px 12px",display:"flex",alignItems:"center",gap:10}}>
+        <div onClick={onBack} style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff",fontSize:16}}>‹</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>现货价格</div>
       </div>
       <div style={{background:"#fff",padding:"10px 12px",display:"flex",gap:8,alignItems:"center",borderBottom:"1px solid #f0f4ff",flexWrap:"wrap"}}>
         <input ref={fileRef} type="file" accept=".csv" style={{display:"none"}} onChange={handleCSV}/>
         <div onClick={function(){fileRef.current.click();}} style={{padding:"6px 14px",borderRadius:20,background:"linear-gradient(135deg,#1565c0,#1e88e5)",color:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>📥 导入CSV</div>
         <div onClick={dlTemplate} style={{padding:"6px 14px",borderRadius:20,background:"rgba(200,220,255,0.4)",color:"#1565c0",fontSize:11,fontWeight:600,cursor:"pointer",border:"1px solid rgba(21,101,192,0.2)"}}>📤 下载模板</div>
         {importMsg&&<div style={{fontSize:11,color:importMsg.indexOf("✅")>=0?"#2e7d32":"#c62828",fontWeight:600}}>{importMsg}</div>}
+      </div>
+      {/* search bar */}
+      <div style={{background:"#f5f8ff",padding:"8px 12px"}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"7px 14px",display:"flex",alignItems:"center",gap:8,border:"1px solid #e3eaf8"}}>
+          <span style={{color:"#90a4ae",fontSize:13}}>🔍</span>
+          <input value={search} onChange={function(e){setSearch(e.target.value);}} placeholder="搜索省份..." style={{background:"none",border:"none",outline:"none",color:"#333",fontSize:13,flex:1,fontFamily:"'PingFang SC',sans-serif"}}/>
+        </div>
       </div>
       <div style={{background:"#fff",overflowX:"auto",display:"flex",borderBottom:"1px solid #f0f4ff"}}>
         {PRICE_TYPES.map(function(t){
@@ -472,7 +619,7 @@ function DataPage(props) {
         {list.map(function(p,i){
           var val=p[cur.k], pct=maxV>minV?(val-minV)/(maxV-minV)*100:50;
           return (
-            <div key={p.name} style={{background:"rgba(255,255,255,0.92)",borderRadius:14,padding:"12px 14px",boxShadow:"0 2px 10px rgba(21,101,192,0.07)"}}>
+            <div key={p.name} style={{background:"#fff",borderRadius:14,padding:"12px 14px",boxShadow:"0 2px 10px rgba(21,101,192,0.07)"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:22,height:22,borderRadius:"50%",background:i===0?"#f44336":i===1?"#ff9800":i===2?"#ffd740":"#e8f0fe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:i<3?"#fff":"#90a4ae",flexShrink:0}}>{i+1}</div>
@@ -489,6 +636,437 @@ function DataPage(props) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Sub-page: storage
+function StoragePage(props) {
+  return (
+    <div>
+      <div style={{background:"linear-gradient(135deg,#00838f,#00acc1)",padding:"10px 16px 12px",display:"flex",alignItems:"center",gap:10}}>
+        <div onClick={props.onBack} style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff",fontSize:16}}>‹</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>储能数据</div>
+        <div style={{marginLeft:"auto",fontSize:10,background:"rgba(255,255,255,0.2)",color:"#fff",padding:"3px 8px",borderRadius:10}}>示例数据</div>
+      </div>
+      <div style={{padding:"10px 12px",background:"#e0f7fa",display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[{l:"总装机",v:"2.95万MW",c:"#00838f"},{l:"今日充电",v:"1.43亿kWh",c:"#00838f"},{l:"综合利用率",v:"67.2%",c:"#00838f"}].map(function(s){
+          return <div key={s.l} style={{flex:1,minWidth:80,background:"#fff",borderRadius:12,padding:"10px 8px",textAlign:"center",boxShadow:"0 2px 8px rgba(0,131,143,0.1)"}}>
+            <div style={{fontSize:15,fontWeight:800,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:10,color:"#78909c",marginTop:2}}>{s.l}</div>
+          </div>;
+        })}
+      </div>
+      <div style={{padding:"8px 12px 4px",fontSize:12,color:"#78909c",fontWeight:600}}>各省储能装机排名（万MW）</div>
+      <div style={{padding:"0 12px 20px",display:"flex",flexDirection:"column",gap:8}}>
+        {STORAGE_DATA.map(function(p,i){
+          var pct=p.cap/8200*100;
+          return (
+            <div key={p.name} style={{background:"#fff",borderRadius:14,padding:"12px 14px",boxShadow:"0 2px 10px rgba(0,131,143,0.08)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:i<3?"#00838f":"#e0f7fa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:i<3?"#fff":"#78909c"}}>{i+1}</div>
+                  <span style={{fontSize:14,fontWeight:700,color:"#004d40"}}>{p.name}</span>
+                  <TrendIcon t={p.trend} s={11}/>
+                </div>
+                <div><span style={{fontSize:18,fontWeight:800,color:"#00838f"}}>{(p.cap/1000).toFixed(1)}</span><span style={{fontSize:10,color:"#90a4ae",marginLeft:2}}>万MW</span></div>
+              </div>
+              <div style={{height:5,background:"#e0f7fa",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#4dd0e1,#00838f)",borderRadius:3}}/></div>
+              <div style={{fontSize:10,color:"#90a4ae",marginTop:5}}>
+                充电 {p.charge}元/MWh · 放电 {p.discharge}元/MWh · 利用率 {p.util}%
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{margin:"0 12px 16px",background:"#fff8e1",borderRadius:12,padding:"10px 14px",fontSize:11,color:"#795548",lineHeight:1.7}}>
+        💡 <b>数据说明：</b>当前为示例数据。如需接入真实储能数据，可通过顶部「导入CSV」上传，或联系我们对接国家能源局统计数据接口。
+      </div>
+    </div>
+  );
+}
+
+// Sub-page: solar
+function SolarPage(props) {
+  return (
+    <div>
+      <div style={{background:"linear-gradient(135deg,#f57c00,#ffa726)",padding:"10px 16px 12px",display:"flex",alignItems:"center",gap:10}}>
+        <div onClick={props.onBack} style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff",fontSize:16}}>‹</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>光伏数据</div>
+        <div style={{marginLeft:"auto",fontSize:10,background:"rgba(255,255,255,0.2)",color:"#fff",padding:"3px 8px",borderRadius:10}}>示例数据</div>
+      </div>
+      <div style={{padding:"10px 12px",background:"#fff3e0",display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[{l:"总装机",v:"7.68亿kW",c:"#e65100"},{l:"今日发电",v:"12.4亿kWh",c:"#e65100"},{l:"弃光率",v:"3.9%",c:"#e65100"}].map(function(s){
+          return <div key={s.l} style={{flex:1,minWidth:80,background:"#fff",borderRadius:12,padding:"10px 8px",textAlign:"center",boxShadow:"0 2px 8px rgba(245,124,0,0.1)"}}>
+            <div style={{fontSize:15,fontWeight:800,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:10,color:"#78909c",marginTop:2}}>{s.l}</div>
+          </div>;
+        })}
+      </div>
+      <div style={{padding:"8px 12px 4px",fontSize:12,color:"#78909c",fontWeight:600}}>各省光伏装机排名（GW）</div>
+      <div style={{padding:"0 12px 20px",display:"flex",flexDirection:"column",gap:8}}>
+        {SOLAR_DATA.map(function(p,i){
+          var pct=p.installed/4100*100;
+          return (
+            <div key={p.name} style={{background:"#fff",borderRadius:14,padding:"12px 14px",boxShadow:"0 2px 10px rgba(245,124,0,0.08)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:i<3?"#f57c00":"#fff3e0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:i<3?"#fff":"#78909c"}}>{i+1}</div>
+                  <span style={{fontSize:14,fontWeight:700,color:"#bf360c"}}>{p.name}</span>
+                  <TrendIcon t={p.trend} s={11}/>
+                </div>
+                <div><span style={{fontSize:18,fontWeight:800,color:"#f57c00"}}>{(p.installed/100).toFixed(1)}</span><span style={{fontSize:10,color:"#90a4ae",marginLeft:2}}>GW</span></div>
+              </div>
+              <div style={{height:5,background:"#fff3e0",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#ffa726,#f57c00)",borderRadius:3}}/></div>
+              <div style={{fontSize:10,color:"#90a4ae",marginTop:5}}>
+                年发电 {p.gen}GWh · 利用时数 {p.util}h · 弃光率 {p.curtail}%
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{margin:"0 12px 16px",background:"#fff8e1",borderRadius:12,padding:"10px 14px",fontSize:11,color:"#795548",lineHeight:1.7}}>
+        💡 <b>数据说明：</b>当前为示例数据。真实光伏数据可通过国家能源局新能源并网统计、各省调度机构月报导入。
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WEATHER PAGE — real API via OpenWeatherMap (free tier)
+//  Replace OWM_KEY with your key from openweathermap.org
+// ═══════════════════════════════════════════════════════════════
+var OWM_KEY = "286e46dbc8e24d650edea377fb140d62"; // demo key — replace with yours
+
+// Key power-consuming provinces and their coordinates for OWM
+var WEATHER_CITIES = [
+  {name:"北京",  lat:39.9042, lon:116.4074},
+  {name:"上海",  lat:31.2304, lon:121.4737},
+  {name:"广东",  lat:23.1291, lon:113.2644},
+  {name:"浙江",  lat:30.2741, lon:120.1551},
+  {name:"江苏",  lat:32.0603, lon:118.7969},
+  {name:"山东",  lat:36.6512, lon:117.1201},
+  {name:"四川",  lat:30.5728, lon:104.0668},
+  {name:"湖北",  lat:30.5928, lon:114.3055},
+  {name:"河南",  lat:34.7466, lon:113.6253},
+  {name:"湖南",  lat:28.2282, lon:112.9388},
+  {name:"新疆",  lat:43.7928, lon:87.6177},
+  {name:"内蒙古",lat:40.8183, lon:111.7522},
+];
+
+var WX_ICON = {
+  "01d":"☀️","01n":"🌙","02d":"⛅","02n":"☁️","03d":"☁️","03n":"☁️",
+  "04d":"☁️","04n":"☁️","09d":"🌧️","09n":"🌧️","10d":"🌦️","10n":"🌧️",
+  "11d":"⛈️","11n":"⛈️","13d":"❄️","13n":"❄️","50d":"🌫️","50n":"🌫️",
+};
+
+// Wind power relevance hint
+function windHint(speed) {
+  if (speed >= 10) return {text:"大风·风电有利", color:"#2e7d32"};
+  if (speed >= 6)  return {text:"中风·风电一般", color:"#1565c0"};
+  return {text:"微风·风电偏低", color:"#78909c"};
+}
+function tempHint(temp) {
+  if (temp >= 35) return {text:"高温·用电高峰", color:"#c62828"};
+  if (temp >= 28) return {text:"偏热·负荷偏高", color:"#ef6c00"};
+  if (temp <= 0)  return {text:"严寒·供暖高负荷", color:"#1565c0"};
+  if (temp <= 8)  return {text:"偏冷·供暖需求大", color:"#0288d1"};
+  return {text:"适宜·负荷正常", color:"#388e3c"};
+}
+
+function WeatherPage(props) {
+  var [data,    setData]    = useState([]);
+  var [loading, setLoading] = useState(true);
+  var [error,   setError]   = useState(null);
+  var [updated, setUpdated] = useState("");
+
+  function fetchAll() {
+    setLoading(true); setError(null);
+    var promises = WEATHER_CITIES.map(function(city) {
+      return fetch(
+        "https://api.openweathermap.org/data/2.5/weather?lat="+city.lat+"&lon="+city.lon
+        +"&appid="+OWM_KEY+"&units=metric&lang=zh_cn"
+      ).then(function(r) { return r.json(); })
+       .then(function(d) {
+         return {
+           name:    city.name,
+           temp:    Math.round(d.main.temp),
+           feels:   Math.round(d.main.feels_like),
+           humidity:d.main.humidity,
+           wind:    Math.round(d.wind.speed * 10) / 10,
+           desc:    d.weather[0].description,
+           icon:    WX_ICON[d.weather[0].icon] || "🌡️",
+           pressure:d.main.pressure,
+         };
+       });
+    });
+    Promise.all(promises)
+      .then(function(results) {
+        setData(results);
+        setLoading(false);
+        var now = new Date();
+        setUpdated(now.getHours()+":"+String(now.getMinutes()).padStart(2,"0")+" 更新");
+      })
+      .catch(function(e) {
+        setError("数据获取失败，请检查网络或API Key");
+        setLoading(false);
+      });
+  }
+
+  // fetch on mount
+  useState(function() { fetchAll(); return undefined; });
+  // workaround: use useEffect via useState trick — call once
+  var [fetched, setFetched] = useState(false);
+  if (!fetched) { setFetched(true); fetchAll(); }
+
+  var skyGrad = "linear-gradient(160deg,#1565c0 0%,#1e88e5 50%,#42a5f5 100%)";
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{background:skyGrad, padding:"10px 16px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+          <div onClick={props.onBack} style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff",fontSize:16}}>‹</div>
+          <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>各省天气 · 用电分析</div>
+          <div style={{marginLeft:"auto",fontSize:10,color:"rgba(255,255,255,0.8)"}}>{updated}</div>
+        </div>
+        {/* data source badge */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.75)"}}>数据来源：OpenWeatherMap 实时API</div>
+          <div onClick={fetchAll} style={{fontSize:10,background:"rgba(255,255,255,0.2)",color:"#fff",padding:"4px 10px",borderRadius:10,cursor:"pointer",fontWeight:600}}>🔄 刷新</div>
+        </div>
+      </div>
+
+      {/* loading */}
+      {loading && (
+        <div style={{padding:"60px 0",textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:12}}>⏳</div>
+          <div style={{fontSize:13,color:"#78909c"}}>正在获取全国天气数据...</div>
+        </div>
+      )}
+
+      {/* error */}
+      {error && !loading && (
+        <div style={{margin:"16px 12px",background:"#ffebee",borderRadius:14,padding:"16px",textAlign:"center"}}>
+          <div style={{fontSize:24,marginBottom:8}}>⚠️</div>
+          <div style={{fontSize:13,color:"#c62828",marginBottom:12}}>{error}</div>
+          <div style={{fontSize:11,color:"#78909c",marginBottom:12,lineHeight:1.7}}>
+            天气数据需要有效的 OpenWeatherMap API Key。<br/>
+            请前往 openweathermap.org 免费注册获取，<br/>
+            然后替换代码中的 <b>OWM_KEY</b> 变量。
+          </div>
+          <div onClick={fetchAll} style={{display:"inline-block",padding:"8px 20px",background:"#1565c0",color:"#fff",borderRadius:20,fontSize:12,fontWeight:600,cursor:"pointer"}}>重试</div>
+        </div>
+      )}
+
+      {/* weather cards */}
+      {!loading && !error && data.length > 0 && (
+        <div style={{padding:"10px 12px 20px",display:"flex",flexDirection:"column",gap:10}}>
+          {/* quick stats */}
+          <div style={{display:"flex",gap:8}}>
+            {(function(){
+              var maxT = data.reduce(function(a,b){ return a.temp>b.temp?a:b; });
+              var minT = data.reduce(function(a,b){ return a.temp<b.temp?a:b; });
+              var maxW = data.reduce(function(a,b){ return a.wind>b.wind?a:b; });
+              return [
+                {l:"最高气温",v:maxT.temp+"°C",sub:maxT.name,c:"#c62828"},
+                {l:"最低气温",v:minT.temp+"°C",sub:minT.name,c:"#1565c0"},
+                {l:"最大风速",v:maxW.wind+"m/s",sub:maxW.name,c:"#2e7d32"},
+              ].map(function(s){
+                return <div key={s.l} style={{flex:1,background:"#fff",borderRadius:12,padding:"10px 8px",textAlign:"center",boxShadow:"0 2px 10px rgba(21,101,192,0.08)"}}>
+                  <div style={{fontSize:16,fontWeight:800,color:s.c}}>{s.v}</div>
+                  <div style={{fontSize:9,color:"#78909c",marginTop:1}}>{s.sub}</div>
+                  <div style={{fontSize:9,color:"#b0bec5"}}>{s.l}</div>
+                </div>;
+              });
+            })()}
+          </div>
+
+          {/* city cards */}
+          {data.map(function(d) {
+            var th = tempHint(d.temp);
+            var wh = windHint(d.wind);
+            return (
+              <div key={d.name} style={{background:"#fff",borderRadius:16,padding:"14px",boxShadow:"0 2px 12px rgba(21,101,192,0.08)"}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <span style={{fontSize:15,fontWeight:800,color:"#1a237e"}}>{d.name}</span>
+                      <span style={{fontSize:10,color:"#78909c"}}>{d.desc}</span>
+                    </div>
+                    {/* hint badges */}
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:10,fontWeight:600,color:th.color,background:th.color+"18",padding:"2px 7px",borderRadius:8}}>{th.text}</span>
+                      <span style={{fontSize:10,fontWeight:600,color:wh.color,background:wh.color+"18",padding:"2px 7px",borderRadius:8}}>{wh.text}</span>
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:28,lineHeight:1}}>{d.icon}</div>
+                    <div style={{fontSize:22,fontWeight:900,color:"#1565c0",lineHeight:1.2}}>{d.temp}°</div>
+                  </div>
+                </div>
+                {/* detail row */}
+                <div style={{display:"flex",gap:0,marginTop:10,borderTop:"1px solid #f0f4ff",paddingTop:8}}>
+                  {[
+                    {l:"体感",v:d.feels+"°C"},
+                    {l:"湿度",v:d.humidity+"%"},
+                    {l:"风速",v:d.wind+"m/s"},
+                    {l:"气压",v:d.pressure+"hPa"},
+                  ].map(function(item){
+                    return <div key={item.l} style={{flex:1,textAlign:"center"}}>
+                      <div style={{fontSize:12,fontWeight:700,color:"#37474f"}}>{item.v}</div>
+                      <div style={{fontSize:9,color:"#b0bec5",marginTop:1}}>{item.l}</div>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* API key guide */}
+      <div style={{margin:"0 12px 20px",background:"#e3f2fd",borderRadius:14,padding:"12px 14px"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#1565c0",marginBottom:6}}>🔑 部署到 Vercel 后如何配置真实 Key</div>
+        {["1. 访问 openweathermap.org 免费注册","2. 复制 API Key（免费1000次/天）","3. 在代码顶部替换 OWM_KEY 变量","4. 或在 Vercel 环境变量中配置 REACT_APP_OWM_KEY"].map(function(t,i){
+          return <div key={i} style={{fontSize:10,color:"#546e7a",padding:"3px 0"}}>{t}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Sub-page: generic placeholder
+function PlaceholderPage(props) {
+  var colors = {
+    "中长期价格":["#1565c0","#e8f0fe"],
+    "省间计算器":["#0288d1","#e1f5fe"],
+    "增量机制电价":["#0d47a1","#e8eaf6"],
+    "电源结构":["#00695c","#e0f2f1"],
+  };
+  var col = colors[props.module] || ["#1565c0","#e8f0fe"];
+  return (
+    <div>
+      <div style={{background:"linear-gradient(135deg,"+col[0]+","+col[0]+"cc)",padding:"10px 16px 12px",display:"flex",alignItems:"center",gap:10}}>
+        <div onClick={props.onBack} style={{width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff",fontSize:16}}>‹</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>{props.module}</div>
+      </div>
+      <div style={{padding:"40px 24px",textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:16}}>🚧</div>
+        <div style={{fontSize:16,fontWeight:700,color:"#1a237e",marginBottom:8}}>{props.module}模块开发中</div>
+        <div style={{fontSize:13,color:"#78909c",lineHeight:1.8,marginBottom:24}}>该板块正在建设中，即将上线。{"\n"}您可以通过导入CSV方式提前录入数据。</div>
+        <div style={{background:col[1],borderRadius:16,padding:"16px",textAlign:"left"}}>
+          <div style={{fontSize:12,fontWeight:700,color:col[0],marginBottom:8}}>📋 数据接入方式</div>
+          {["手动导入CSV文件（当前支持）","联系我们对接数据商API","后端爬虫抓取公开数据（需服务器）"].map(function(t,i){
+            return <div key={i} style={{fontSize:11,color:"#546e7a",padding:"4px 0",display:"flex",alignItems:"center",gap:6}}>
+              <div style={{width:5,height:5,borderRadius:"50%",background:col[0],flexShrink:0}}/>
+              {t}
+            </div>;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataPage(props) {
+  var elecData=props.elecData, setElecData=props.setElecData;
+  var [activeModule, setActiveModule] = useState(null);
+
+  // Sub-page routing
+  if (activeModule === "spot") {
+    return (
+      <div style={{background:"#f0f6ff",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+        <div style={{background:"#1565c0",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+        <SpotPricePage elecData={elecData} setElecData={setElecData} onBack={function(){setActiveModule(null);}}/>
+      </div>
+    );
+  }
+  if (activeModule === "storage") {
+    return (
+      <div style={{background:"#f0fdfd",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+        <div style={{background:"#00838f",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+        <StoragePage onBack={function(){setActiveModule(null);}}/>
+      </div>
+    );
+  }
+  if (activeModule === "solar") {
+    return (
+      <div style={{background:"#fffaf0",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+        <div style={{background:"#f57c00",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+        <SolarPage onBack={function(){setActiveModule(null);}}/>
+      </div>
+    );
+  }
+  if (activeModule === "weather") {
+    return (
+      <div style={{background:"#f0f7ff",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+        <div style={{background:"#1565c0",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+        <WeatherPage onBack={function(){setActiveModule(null);}}/>
+      </div>
+    );
+  }
+  if (activeModule) {
+    var modName = DATA_MODULES.find(function(m){ return m.id===activeModule; });
+    return (
+      <div style={{background:"#f0f6ff",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+        <div style={{background:"#1565c0",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+        <PlaceholderPage module={modName?modName.name:activeModule} onBack={function(){setActiveModule(null);}}/>
+      </div>
+    );
+  }
+
+  // Main module grid
+  return (
+    <div style={{background:"#f0f6ff",minHeight:"100vh",fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif"}}>
+      <div style={{background:"#1565c0",padding:"6px 16px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:500}}><span>9:41</span><span>📶 🔋</span></div>
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#1565c0,#1e88e5)",padding:"14px 16px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,0.7)",letterSpacing:1,marginBottom:2}}>易能电易查</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>查数据</div>
+          </div>
+          <div style={{width:40,height:40,borderRadius:14,background:"rgba(255,255,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🔍</div>
+        </div>
+      </div>
+
+      {/* Module grid */}
+      <div style={{margin:"-10px 12px 0",background:"#fff",borderRadius:20,padding:"16px 12px 8px",boxShadow:"0 4px 24px rgba(21,101,192,0.12)"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {DATA_MODULES.map(function(m){
+            return (
+              <div key={m.id} onClick={function(){setActiveModule(m.id);}}
+                style={{background:"linear-gradient(145deg,#f5f9ff,#eaf2ff)",borderRadius:16,padding:"16px 12px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:8,cursor:"pointer",border:"1px solid rgba(21,101,192,0.08)",position:"relative",overflow:"hidden",boxShadow:"0 2px 12px rgba(21,101,192,0.07)",transition:"transform 0.1s"}}>
+                {/* Tag badge */}
+                {m.tag&&<div style={{position:"absolute",top:8,right:8,fontSize:9,fontWeight:700,color:m.tag==="NEW"?"#e65100":"#1565c0",background:m.tag==="NEW"?"#fff3e0":"rgba(21,101,192,0.08)",padding:"2px 6px",borderRadius:6}}>{m.tag}</div>}
+                {/* Glow circle */}
+                <div style={{position:"absolute",top:-15,left:-15,width:60,height:60,borderRadius:"50%",background:"radial-gradient(circle,rgba(21,101,192,0.1),transparent)"}}/>
+                <ModuleIcon name={m.name} fallback="📊"/>
+                <div style={{fontSize:13,fontWeight:700,color:"#1a237e",textAlign:"center"}}>{m.name}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Data source tip */}
+      <div style={{margin:"12px 12px 0",background:"rgba(255,255,255,0.8)",borderRadius:14,padding:"12px 14px"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#1a237e",marginBottom:6}}>📡 数据接入说明</div>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {[
+            {icon:"✅",text:"现货价格：支持CSV手动导入，实时更新"},
+            {icon:"🟡",text:"储能/光伏：内置示例数据，支持CSV导入"},
+            {icon:"🔵",text:"其他板块：开发中，欢迎反馈需求"},
+          ].map(function(item,i){
+            return <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,fontSize:11,color:"#546e7a",lineHeight:1.6}}>
+              <span>{item.icon}</span><span>{item.text}</span>
+            </div>;
+          })}
+        </div>
+      </div>
+
+      <div style={{height:20}}/>
     </div>
   );
 }
